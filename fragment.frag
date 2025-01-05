@@ -1,9 +1,10 @@
 uniform vec2 u_resolution;
 uniform float u_time;
-// uniform sampler2D u_texture;
+uniform sampler2D u_default;
 
 void main() {
     vec2 st = gl_FragCoord.xy / u_resolution.xy;
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 0.8);
-    // gl_FragColor = texture2D(u_texture, st);
+    vec4 textureColor = texture2D(u_default, st);
+
+    gl_FragColor = textureColor;
 }

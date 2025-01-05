@@ -18,12 +18,15 @@ let rtScene;
 
 init()
 
-// TODO: Have the virtual viewport position be tied to the camera
+// NOTE: You're stuck trying to make sure the viewport rotate with the camera
+// NOTE: LETS SCALE BACK, WE DON't NEED FOR THE CAMERA TO BE MOVEABLE
+
 function init() {
 	clock = new THREE.Clock();
-	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+	const fov = 90;
+	camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1000);
 	camera.position.z = 1;
-	//camera.rotation.y = 2;
+
 
 	scene = new THREE.Scene();
 	rtScene = new THREE.Scene();
@@ -42,12 +45,23 @@ function init() {
 		u_mouse: { type: "v2", value: new THREE.Vector2() },
 		u_default: { value: framebuffer.texture, },
 		u_camera: { type: "v3", value: new THREE.Vector3(), },
+		u_pi: { value: Math.PI },
+		u_fov: { value: fov },
 	};
 
 	const sphere1 = renderSphere(0.5, 0x00ff00);
 	scene.add(sphere1);
 
-	renderShaderPlane();
+	const planeHeight = camera.near * Math.tan(deg2rad(camera.fov * 0.5)) * 2;
+	const planeWidth = planeHeight * camera.aspect;
+
+
+	uniforms.u_camera.value = new THREE.Vector3(planeWidth, planeHeight, camera.near);
+
+	const helper = new THREE.CameraHelper(camera);
+	scene.add(helper);
+
+	renderShaderPlane(window.innerWidth, window.innerHeight);
 
 	onWindowResize();
 	window.addEventListener('resize', onWindowResize, false);
@@ -75,7 +89,8 @@ function render() {
 	uniforms.u_time.value += clock.getDelta();
 	// NOTE: Do this after you dealt with moving the plane with respect to the camera pos and rot
 	// TODO: Figure out how to get the height of the near clipping plane;
-	uniforms.u_camera.value = new THREE.Vector3(0.0, 0.0, camera.near);
+	//
+
 
 
 	if (showDefaultRenderer) {
@@ -92,8 +107,8 @@ function render() {
 }
 
 
-function renderShaderPlane() {
-	const geometry = new THREE.PlaneGeometry(renderer.domElement.width, renderer.domElement.height);
+function renderShaderPlane(width, height) {
+	const geometry = new THREE.PlaneGeometry(width, height);
 	const material = new THREE.ShaderMaterial({
 		uniforms: uniforms,
 		fragmentShader: pathTracerShader,
@@ -102,3 +117,15 @@ function renderShaderPlane() {
 	rtScene.add(mesh);
 }
 
+
+function deg2rad(deg) {
+	return deg * (Math.PI / 180);
+}
+
+function drawPoint(position, color) {
+	const sphere = renderSphere(0.009, color);
+	sphere.position.x = position.x;
+	sphere.position.y = position.y;
+	sphere.position.z = position.z;
+	return sphere;
+}

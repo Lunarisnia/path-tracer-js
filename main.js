@@ -6,7 +6,7 @@ const container = document.getElementById('container');
 let showDefaultRenderer = false;
 let framebuffer;
 let clock;
-let camera;
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 let renderer;
 let uniforms;
 
@@ -18,10 +18,12 @@ let rtScene;
 
 init()
 
+// TODO: Have the virtual viewport position be tied to the camera
 function init() {
 	clock = new THREE.Clock();
 	camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 	camera.position.z = 1;
+	//camera.rotation.y = 2;
 
 	scene = new THREE.Scene();
 	rtScene = new THREE.Scene();
@@ -39,6 +41,7 @@ function init() {
 		u_resolution: { type: "v2", value: new THREE.Vector2() },
 		u_mouse: { type: "v2", value: new THREE.Vector2() },
 		u_default: { value: framebuffer.texture, },
+		u_camera: { type: "v3", value: new THREE.Vector3(), },
 	};
 
 	const sphere1 = renderSphere(0.5, 0x00ff00);
@@ -70,6 +73,9 @@ function onWindowResize() {
 
 function render() {
 	uniforms.u_time.value += clock.getDelta();
+	// NOTE: Do this after you dealt with moving the plane with respect to the camera pos and rot
+	// TODO: Figure out how to get the height of the near clipping plane;
+	uniforms.u_camera.value = new THREE.Vector3(0.0, 0.0, camera.near);
 
 
 	if (showDefaultRenderer) {
@@ -79,6 +85,7 @@ function render() {
 		renderer.setRenderTarget(framebuffer);
 		renderer.render(scene, camera);
 		renderer.setRenderTarget(null); // Restore to default render target
+
 
 		renderer.render(rtScene, camera);
 	}

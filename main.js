@@ -1,7 +1,9 @@
 import * as THREE from 'three';
-import fragmentShader from './fragment.frag?raw'
+import pathTracerShader from './pathTracer.frag?raw'
+import renderSphere from './src/sphere';
 
 const container = document.getElementById('container');
+let showDefaultRenderer = false;
 let framebuffer;
 let clock;
 let camera;
@@ -12,6 +14,7 @@ let uniforms;
 let scene;
 // Ray Traced Scene
 let rtScene;
+
 
 init()
 
@@ -38,17 +41,19 @@ function init() {
 		u_default: { value: framebuffer.texture, },
 	};
 
-	const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-	const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-	const cube = new THREE.Mesh(geometry, material);
-	cube.position.z = -0.5;
-	scene.add(cube);
-
+	const sphere1 = renderSphere(0.5, 0x00ff00);
+	scene.add(sphere1);
 
 	renderShaderPlane();
 
 	onWindowResize();
 	window.addEventListener('resize', onWindowResize, false);
+	window.addEventListener('keypress', (e) => {
+		if (e.key == 'c') {
+			showDefaultRenderer = !showDefaultRenderer;
+			console.log("Change Render: ", showDefaultRenderer)
+		}
+	})
 
 	document.onmousemove = function(e) {
 		uniforms.u_mouse.value.x = e.pageX
@@ -66,12 +71,17 @@ function onWindowResize() {
 function render() {
 	uniforms.u_time.value += clock.getDelta();
 
-	// Render to buffer using the other scene
-	renderer.setRenderTarget(framebuffer);
-	renderer.render(scene, camera);
-	renderer.setRenderTarget(null); // Restore to default render target
 
-	renderer.render(rtScene, camera);
+	if (showDefaultRenderer) {
+		renderer.render(scene, camera);
+	} else {
+		// Render to buffer using the other scene
+		renderer.setRenderTarget(framebuffer);
+		renderer.render(scene, camera);
+		renderer.setRenderTarget(null); // Restore to default render target
+
+		renderer.render(rtScene, camera);
+	}
 }
 
 
@@ -79,8 +89,9 @@ function renderShaderPlane() {
 	const geometry = new THREE.PlaneGeometry(renderer.domElement.width, renderer.domElement.height);
 	const material = new THREE.ShaderMaterial({
 		uniforms: uniforms,
-		fragmentShader: fragmentShader,
+		fragmentShader: pathTracerShader,
 	});
 	const mesh = new THREE.Mesh(geometry, material);
 	rtScene.add(mesh);
 }
+
